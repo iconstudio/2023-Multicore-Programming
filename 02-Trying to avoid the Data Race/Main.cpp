@@ -74,6 +74,9 @@ void PetersonLock(const int myID)
 	flag[myID] = true;
 
 	victim = myID;
+
+	// 추가!
+	std::atomic_thread_fence(std::memory_order_seq_cst);
 	while (flag[other] && victim == myID)
 	{
 	}
@@ -105,8 +108,8 @@ void PetersonSumWorker2(int id)
 	for (int i = 0; i < 25000000; i++)
 	{
 		PetersonLock(id);
-		// summary = summary + 2;
-		summary += 2;
+		//summary += 2;
+		summary = summary + 2;
 		PetersonUnlock(id);
 	}
 }
@@ -134,8 +137,8 @@ int main()
 
 	auto clock_before = std::chrono::high_resolution_clock::now();
 
-	std::jthread th1{ PetersonSumWorker3, 0 };
-	std::jthread th2{ PetersonSumWorker3, 1 };
+	std::jthread th1{ PetersonSumWorker2, 0 };
+	std::jthread th2{ PetersonSumWorker2, 1 };
 
 	if (th1.joinable())
 	{
