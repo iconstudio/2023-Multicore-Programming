@@ -1,5 +1,69 @@
 ﻿#include "Main.hpp"
 
+constexpr int summary_target = 100000000;
+
+int summary = 0;
+volatile int victim = 0;
+volatile bool flag[2] = { false, false };
+
+std::atomic_int ga_summary = 0;
+std::atomic_int ga_victim = 0;
+std::atomic_bool ga_flags[] = { false, false };
+
+/// <summary>
+/// 0: 아무도 락을 얻지 않았음.
+/// 1: 누군가 락을 얻어서 임계 영역을 실행 중.
+/// </summary>
+volatile int cas_locker = 0;
+
+inline bool CAS(std::atomic_int* addr, int expected, int new_val)
+{
+	return std::atomic_compare_exchange_strong(addr, &expected, new_val);
+}
+
+inline bool CAS(volatile int* addr, int expected, int new_val)
+{
+	return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic_int*>(addr), &expected, new_val);
+}
+
+/// <summary>
+/// cas_locker가 1이면 0이 될 때 까지 대기함.
+/// cas_locker가 0이면 원자적으로 1로 바꾸고, 반환한다.
+/// </summary>
+/// <param name="id"></param>
+inline void CasLock(const int id)
+{
+	while (!CAS(&cas_locker, 0, 1));
+}
+
+/// <summary>
+/// 원자적으로 cas_locker를 0으로 바꾼다.
+/// </summary>
+/// <param name="id"></param>
+inline void CasUnlock(const int id)
+{
+	cas_locker = 0;
+
+	//while (true)
+	{
+
+	}
+	//while (CAS(&cas_locker, 1, 0));
+}
+
+void CasSumWorker(const int th_number, const int id)
+{
+	const int local_target = summary_target / th_number;
+	const int local_times = local_target / 2;
+
+	for (int i = 0; i < local_times; i++)
+	{
+		CasLock(id);
+		summary += 2;
+		CasUnlock(id);
+	}
+}
+
 bool g_ready = false;
 int g_data = 0;
 
@@ -64,10 +128,6 @@ void SenderLocken()
 	g_ready = true;
 }
 
-int summary = 0;
-volatile int victim = 0;
-volatile bool flag[2] = { false, false };
-
 void PetersonLock(const int myID)
 {
 	const int other = 1 - myID;
@@ -87,12 +147,28 @@ void PetersonUnlock(const int myID)
 	flag[myID] = false;
 }
 
+void AtomicPetersonLock(const int myID)
+{
+	const int other = 1 - myID;
+	ga_flags[myID] = true;
+
+	ga_victim = myID;
+	while (ga_flags[other] && ga_victim == myID)
+	{
+	}
+}
+
+void AtomicPetersonUnlock(const int myID)
+{
+	ga_flags[myID] = false;
+}
+
 // 맞는 결과
 void PetersonSumWorker1(int id)
 {
 	PetersonLock(id);
 
-	for (int i = 0; i < 25000000; i++)
+	for (int i = 0; i < 2500000; i++)
 	{
 		// summary = summary + 2;
 		summary += 2;
@@ -105,7 +181,7 @@ void PetersonSumWorker1(int id)
 // 게다가 Mutex 보다 느리다!
 void PetersonSumWorker2(int id)
 {
-	for (int i = 0; i < 25000000; i++)
+	for (int i = 0; i < 2500000; i++)
 	{
 		PetersonLock(id);
 		//summary += 2;
@@ -115,48 +191,70 @@ void PetersonSumWorker2(int id)
 }
 
 // 
-void PetersonSumWorker3(int id)
+void PetersonSumWorker3(int th_count, int id)
 {
+	const int local_target = summary_target / th_count;
+	const int local_times = local_target / 2;
+
 	int local_sum = 0;
 
-	for (int i = 0; i < 25000000; i++)
+	for (int i = 0; i < local_times; i++)
 	{
-		// summary = summary + 2;
 		local_sum += 2;
 	}
 
-	PetersonLock(id);
+	AtomicPetersonLock(id);
 	summary += local_sum;
-	PetersonUnlock(id);
+	AtomicPetersonUnlock(id);
+}
+
+// 
+void PetersonSumWorker4(int th_count, int id)
+{
+	const int local_target = summary_target / th_count;
+	const int local_times = local_target / 2;
+
+	for (int i = 0; i < local_times; i++)
+	{
+		AtomicPetersonLock(id);
+		summary += 2;
+		AtomicPetersonUnlock(id);
+	}
 }
 
 int main()
 {
-	//std::jthread th1{ VolatileSender };
-	//std::jthread th2{ VolatileReceiver };
-
-	auto clock_before = std::chrono::high_resolution_clock::now();
-
-	std::jthread th1{ PetersonSumWorker2, 0 };
-	std::jthread th2{ PetersonSumWorker2, 1 };
-
-	if (th1.joinable())
+	for (int th_count = 1; th_count <= 8; th_count *= 2)
 	{
-		th1.join();
+		std::vector<std::jthread> workers{};
+		workers.reserve(th_count);
+
+		auto clock_before = std::chrono::high_resolution_clock::now();
+
+		for (int i = 0; i < th_count; i++)
+		{
+			workers.emplace_back(CasSumWorker, th_count, i);
+		}
+
+		for (auto& th : workers)
+		{
+			if (th.joinable())
+			{
+				th.join();
+			}
+		}
+
+		auto clock_after = std::chrono::high_resolution_clock::now();
+
+		auto elapsed_time = clock_after - clock_before;
+		auto ms_time = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time);
+
+		std::cout << "스레드 수: " << th_count << "개\n";
+		std::cout << "합계: " << summary << "\n";
+		std::cout << "시간: " << ms_time << "\n";
+
+		summary = 0;
 	}
-
-	if (th2.joinable())
-	{
-		th2.join();
-	}
-
-	auto clock_after = std::chrono::high_resolution_clock::now();
-
-	auto elapsed_time = clock_after - clock_before;
-	auto ms_time = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time);
-
-	std::cout << "합계: " << summary << "\n";
-	std::cout << "시간: " << ms_time << "\n";
 
 	return 0;
 }
