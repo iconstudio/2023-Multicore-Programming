@@ -8,48 +8,43 @@ class BakeryLocker
 public:
 	constexpr BakeryLocker(int th_count)
 		: threadsNumber(th_count)
-		, myFlags(), myLabals()
+		, myFlags(th_count, false), myLabels()
 	{
-		myFlags.resize(th_count, false);
-		myLabals.resize(th_count, 0);
+		//myLabels.reserve(th_count);
+		myLabels.resize(th_count);
 	}
 
-	inline constexpr void lock(const int id)
+	inline void lock(const int id)
 	{
 		myFlags[id] = true;
 
-		auto it = std::max(myLabals.begin(), myLabals.end());
-		myLabals[id] = *it + 1;
+		auto& it = std::max(myLabels.begin(), myLabels.end());
+		myLabels[id] = *it + 1;
 
-		bool quit = true;
-		while (true)
+		for (int k = 0; k < threadsNumber; k++)
 		{
-			for (int k = 0; k < threadsNumber; k++)
+			if (k != id)
 			{
-				if (k != id)
-				{
-					if (myFlags[k] && myLabals[k] < myLabals[id] && k < id)
-					{
-						quit = false;
-					}
-				}
-			}
+				while (myFlags[k]);
 
-			if (quit) break;
+				while (myLabels[k] != 0
+					&& (myLabels[k] < myLabels[id]
+					|| (myLabels[k] == myLabels[id] && k < id)));
+			}
 		}
 	}
 
-	inline constexpr void unlock(const int id)
+	inline void unlock(const int id)
 	{
 		myFlags[id] = false;
 	}
 
 	const int threadsNumber;
 	std::vector<bool> myFlags;
-	std::vector<int> myLabals;
+	std::vector<std::atomic_int> myLabels;
 };
 
-constexpr void Worker(BakeryLocker& locker, const int id)
+void Worker(BakeryLocker& locker, const int id)
 {
 	const int local_target = summary_target / locker.threadsNumber;
 	const int local_times = local_target / 2;
@@ -62,7 +57,7 @@ constexpr void Worker(BakeryLocker& locker, const int id)
 	}
 }
 
-constexpr void LocalWorker(BakeryLocker& locker, const int id)
+void LocalWorker(BakeryLocker& locker, const int id)
 {
 	const int local_target = summary_target / locker.threadsNumber;
 	const int local_times = local_target / 2;
