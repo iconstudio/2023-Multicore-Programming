@@ -1,20 +1,24 @@
-#include "Main.hpp"
+#//include "Main.hpp"
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <vector>
+#include <chrono>
+#include <algorithm>
 
-constexpr int summary_target = 100000000;
+constexpr int summary_target = 10000000;
 volatile int summary = 0;
+std::mutex summary_mtx{};
 
 class BakeryLocker
 {
 public:
 	constexpr BakeryLocker(int th_count)
 		: threadsNumber(th_count)
-		, myFlags(th_count, false), myLabels()
-	{
-		//myLabels.reserve(th_count);
-		myLabels.resize(th_count);
-	}
+		, myFlags(th_count, false), myLabels(th_count, 0)
+	{}
 
-	inline void lock(const int id)
+	inline constexpr void lock(const int id)
 	{
 		myFlags[id] = true;
 
@@ -27,26 +31,26 @@ public:
 			{
 				while (myFlags[k]);
 
-				while (myLabels[k] != 0
-					&& (myLabels[k] < myLabels[id]
-					|| (myLabels[k] == myLabels[id] && k < id)));
+				while (myLabels[k] != 0 && (myLabels[k] < myLabels[id] || (myLabels[k] == myLabels[id] && k < id)));
 			}
 		}
 	}
 
-	inline void unlock(const int id)
+	inline constexpr void unlock(const int id)
 	{
 		myFlags[id] = false;
 	}
 
 	const int threadsNumber;
 	std::vector<bool> myFlags;
-	std::vector<std::atomic_int> myLabels;
+	std::vector<int> myLabels;
 };
 
-void Worker(BakeryLocker& locker, const int id)
+constexpr void BakeryWorker(const int th_count, const int id)
 {
-	const int local_target = summary_target / locker.threadsNumber;
+	BakeryLocker locker{ th_count };
+
+	const int local_target = summary_target / th_count;
 	const int local_times = local_target / 2;
 
 	for (int i = 0; i < local_times; i++)
@@ -57,9 +61,9 @@ void Worker(BakeryLocker& locker, const int id)
 	}
 }
 
-void LocalWorker(BakeryLocker& locker, const int id)
+constexpr void LocalWorker(const int th_count, const int id)
 {
-	const int local_target = summary_target / locker.threadsNumber;
+	const int local_target = summary_target / th_count;
 	const int local_times = local_target / 2;
 
 	int local_sum = 0;
@@ -68,26 +72,46 @@ void LocalWorker(BakeryLocker& locker, const int id)
 		local_sum += 2;
 	}
 
-	locker.lock(id);
 	summary += local_sum;
-	locker.unlock(id);
+}
+
+constexpr void PlainWorker(const int th_count, const int id)
+{
+	const int local_target = summary_target / th_count;
+	const int local_times = local_target / 2;
+
+	for (int i = 0; i < local_times; i++)
+	{
+		summary += 2;
+	}
+}
+
+void MutexWorker(const int th_count, const int id)
+{
+	const int local_target = summary_target / th_count;
+	const int local_times = local_target / 2;
+
+	for (int i = 0; i < local_times; i++)
+	{
+		summary_mtx.lock();
+		summary += 2;
+		summary_mtx.unlock();
+	}
 }
 
 int main()
 {
 	for (int th_count = 1; th_count <= 8; th_count *= 2)
 	{
-		BakeryLocker locker{ th_count };
-
 		std::vector<std::thread> workers{};
 		workers.reserve(th_count);
 
-		auto clock_before = std::chrono::high_resolution_clock::now();
-
 		for (int i = 0; i < th_count; i++)
 		{
-			workers.emplace_back(Worker, std::ref(locker), i);
+			workers.emplace_back(BakeryWorker, th_count, i);
 		}
+
+		auto clock_before = std::chrono::high_resolution_clock::now();
 
 		for (auto& th : workers)
 		{
@@ -103,8 +127,8 @@ int main()
 		auto ms_time = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time);
 
 		std::cout << "스레드 수: " << th_count << "개\n";
-		std::cout << "합계: " << summary << "\n";
-		std::cout << "시간: " << ms_time << "\n";
+		std::cout << "합계: " << summary << '\n';
+		std::cout << "시간: " << ms_time << '\n' << std::endl;
 
 		summary = 0;
 	}
