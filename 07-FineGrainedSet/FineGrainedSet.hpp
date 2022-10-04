@@ -6,33 +6,33 @@ struct LinkedNode
 {
 	LinkedNode(int value)
 		: myValue(value)
-		, myNext(), myPrev()
-		, myLock()
+		, myNext(), myPrev(), myLock()
 	{}
 
-	void SetNext(LinkedNode* node)
+	inline void SetNext(LinkedNode* node)
 	{
 		myNext = node;
 	}
 
-	void SetPrev(LinkedNode* node)
+	inline void SetPrev(LinkedNode* node)
 	{
 		myPrev = node;
 	}
 
-	void Lock()
+	inline void Lock()
 	{
 		myLock.lock();
 	}
 
-	void Unlock()
+	inline void Unlock()
 	{
 		myLock.unlock();
 	}
 
 	const int myValue;
 
-	LinkedNode* myNext, * myPrev;
+	LinkedNode* myNext;
+	LinkedNode* myPrev;
 
 private:
 	std::mutex myLock;
@@ -49,10 +49,65 @@ public:
 		myTail->SetPrev(myHead);
 	}
 
-	inline bool Push(const int value)
+	bool Validate(const int value, const LinkedNode* prev, const LinkedNode* curr)
 	{
-		LinkedNode* prev = myHead;
-		LinkedNode* curr = myHead->myNext;
+		auto it_prev = myHead;
+		auto it = it_prev->myNext;
+
+		while (it->myValue < value)
+		{
+			it_prev = it;
+			it = it->myNext;
+		}
+
+		return (it_prev == prev && it == curr);
+	}
+
+	bool Add(const int value)
+	{
+		bool result = true;
+		auto prev = myHead;
+		auto curr = myHead->myNext;
+
+		while (curr->myValue < value)
+		{
+			prev = curr;
+			curr = curr->myNext;
+		}
+
+		prev->Lock();
+		curr->Lock();
+
+		if (!Validate(value, prev, curr))
+		{
+			result = false;
+		}
+		else if (curr->myValue == value)
+		{
+			result = false;
+		}
+		else
+		{
+			auto new_node = new LinkedNode(value);
+
+			curr->SetPrev(new_node);
+			new_node->SetNext(curr);
+
+			prev->SetNext(new_node);
+			new_node->SetPrev(prev);
+		}
+
+		curr->Unlock();
+		prev->Unlock();
+
+		return result;
+	}
+
+	bool Contains(const int value)
+	{
+		bool result = false;
+		auto prev = myHead;
+		auto curr = prev->myNext;
 
 		while (curr->myValue < value)
 		{
@@ -64,30 +119,19 @@ public:
 		curr->Lock();
 		if (curr->myValue == value)
 		{
-			curr->Unlock();
-			prev->Unlock();
-
-			return false;
+			result = true;
 		}
-
-		auto new_node = new LinkedNode(value);
-
-		curr->SetPrev(new_node);
-		new_node->SetNext(curr);
-
-		prev->SetNext(new_node);
-		new_node->SetPrev(prev);
 
 		curr->Unlock();
 		prev->Unlock();
 
-		return true;
+		return result;
 	}
 
-	inline LinkedNode* Find(const int value)
+	void Remove(const int value)
 	{
-		LinkedNode* prev = myHead;
-		LinkedNode* curr = prev->myNext;
+		auto prev = myHead;
+		auto curr = myHead->myNext;
 
 		while (curr->myValue < value)
 		{
@@ -97,30 +141,15 @@ public:
 
 		prev->Lock();
 		curr->Lock();
-		if (curr->myValue == value) // °ªÀ» Ã£¾Æ ³¿
+
+		if (!Validate(value, prev, curr))
 		{
 			curr->Unlock();
 			prev->Unlock();
-			return curr;
+
+			return;
 		}
-
-		return myTail;
-	}
-
-	inline void Remove(const int value)
-	{
-		LinkedNode* prev = myHead;
-		LinkedNode* curr = myHead->myNext;
-
-		while (curr->myValue < value)
-		{
-			prev = curr;
-			curr = curr->myNext;
-		}
-
-		prev->Lock();
-		curr->Lock();
-		if (curr->myValue == value) // °ªÀ» Ã£¾Æ ³¿
+		else if (curr->myValue == value) // °ªÀ» Ã£¾Æ ³¿
 		{
 			prev->SetNext(curr->myNext);
 
@@ -128,12 +157,14 @@ public:
 			prev->Unlock();
 
 			//delete curr;
+			return;
 		}
 
+		curr->Unlock();
 		prev->Unlock();
 	}
 
-	inline void Clear()
+	void Clear()
 	{
 		myHead->SetNext(myTail);
 		myTail->SetPrev(myHead);
@@ -153,7 +184,7 @@ public:
 		myTail->SetPrev(myHead);
 	}
 
-	inline LinkedNode* Push(const int value)
+	inline LinkedNode* Add(const int value)
 	{
 		LinkedNode* prev = myHead;
 		LinkedNode* curr;
@@ -197,7 +228,7 @@ public:
 	{
 		LinkedNode* prev = myHead;
 		LinkedNode* curr;
-		
+
 		prev->Lock();
 
 		curr = prev->myNext;
