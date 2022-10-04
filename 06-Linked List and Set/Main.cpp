@@ -4,27 +4,58 @@
 
 OrderedSet my_set{};
 
+constexpr int NUM_TEST = 400000;
+constexpr int KEY_RANGE = 1000;
+
 void Worker(const int threads_number, const int index)
 {
-	for (int i = 0; i < 100; i++)
+	int key = 0;
+	for (int i = 0; i < NUM_TEST / threads_number; i++)
 	{
-		my_set.Push(i);
-	}
+		switch (rand() % 3)
+		{
+			case 0:
+			{
+				key = rand() % KEY_RANGE;
+				
+				my_set.Push(key);
+			}
+			break;
 
-	for (int i = 0; i < 100; i++)
-	{
-		my_set.Push(i);
+			case 1:
+			{
+				key = rand() % KEY_RANGE;
+				
+				my_set.Remove(key);
+			}
+			break;
+
+			case 2:
+			{
+				key = rand() % KEY_RANGE;
+			}
+			break;
+
+			default:
+			{
+				std::cout << "Error\n";
+				exit(-1);
+			}
+			break;
+		}
 	}
 }
 
 int main()
 {
-	for (int th_count = 1; th_count <= 1; th_count *= 2)
+	for (int th_count = 1; th_count <= 8; th_count *= 2)
 	{
 		std::vector<std::jthread> workers{};
 		workers.reserve(th_count);
 
 		auto clock_before = std::chrono::high_resolution_clock::now();
+
+		std::cout << "스레드 수 (" << th_count << ") 시작!\n";
 
 		for (int i = 0; i < th_count; i++)
 		{
@@ -44,8 +75,21 @@ int main()
 		auto elapsed_time = clock_after - clock_before;
 		auto ms_time = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time);
 
-		std::cout << "스레드 수: " << th_count << "개\n";
 		std::cout << "시간: " << ms_time << "\n";
+		std::cout << "결과: { ";
+
+		int index = 0;
+		auto it = my_set.myHead->myNext;
+		for (int i = 0; i < 20; i++)
+		{
+			if (it == my_set.myTail) break;
+
+			std::cout << it->myValue << ", ";
+
+			it = it->myNext;
+		}
+
+		std::cout << "}\n\n";
 
 		my_set.Clear();
 	}

@@ -50,15 +50,11 @@ public:
 			prev->SetNext(new_node);
 			new_node->SetPrev(prev);
 
-			std::cout << "삽입 성공, 값: " << value << ".\n";
-
 			myLock.unlock();
 			return new_node;
 		}
 		else // 중복 값은 금지
 		{
-			std::cout << "중복 값: " << value << ".\n";
-
 			myLock.unlock();
 		}
 
@@ -83,11 +79,11 @@ public:
 		return myTail;
 	}
 
-	inline std::shared_ptr<LinkedNode> Pop(const int value)
+	inline std::shared_ptr<LinkedNode> Remove(const int value)
 	{
 		auto target = Find(value);
 
-		if (target)
+		if (target && target != myTail)
 		{
 			auto& after = target->myNext;
 			auto& before = target->myPrev;
@@ -99,6 +95,8 @@ public:
 			{
 				before->SetNext(after);
 			}
+
+			return target;
 		}
 		else
 		{
@@ -109,6 +107,7 @@ public:
 	inline void Clear()
 	{
 		myHead->SetNext(myTail);
+		myTail->SetPrev(myHead);
 	}
 
 	const std::shared_ptr<LinkedNode> myHead, myTail;
