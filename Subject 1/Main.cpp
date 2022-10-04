@@ -104,7 +104,7 @@ int main()
 
 		std::cout << "스레드 수: " << th_count << "개\n";
 		std::cout << "합계: " << summary << "\n";
-		std::cout << "시간: " << ms_time << "\n";
+		std::cout << "시간: " << ms_time.count() << "ms\n";
 
 		summary = 0;
 	}
