@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include <mutex>
 
 struct LinkedNode
@@ -142,22 +141,18 @@ public:
 		prev->Lock();
 		curr->Lock();
 
-		if (!Validate(value, prev, curr))
+		if (Validate(value, prev, curr))
 		{
-			curr->Unlock();
-			prev->Unlock();
+			if (curr->myValue == value)
+			{
+				prev->SetNext(curr->myNext);
 
-			return;
-		}
-		else if (curr->myValue == value) // °ªÀ» Ã£¾Æ ³¿
-		{
-			prev->SetNext(curr->myNext);
+				curr->Unlock();
+				prev->Unlock();
 
-			curr->Unlock();
-			prev->Unlock();
-
-			//delete curr;
-			return;
+				//delete curr;
+				return;
+			}
 		}
 
 		curr->Unlock();
