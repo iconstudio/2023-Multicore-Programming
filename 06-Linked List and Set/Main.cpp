@@ -19,7 +19,7 @@ void Worker(const int threads_number, const int index)
 
 int main()
 {
-	for (int th_count = 1; th_count <= 8; th_count *= 2)
+	for (int th_count = 1; th_count <= 1; th_count *= 2)
 	{
 		std::vector<std::jthread> workers{};
 		workers.reserve(th_count);

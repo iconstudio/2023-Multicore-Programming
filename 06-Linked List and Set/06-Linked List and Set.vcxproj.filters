@@ -18,9 +18,6 @@
     <ClInclude Include="OrderedSet.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SetNode.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="pch.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -30,9 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OrderedSet.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="SetNode.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">

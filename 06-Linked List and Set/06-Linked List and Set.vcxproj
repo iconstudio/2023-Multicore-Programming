@@ -146,13 +146,11 @@
     <ClInclude Include="Main.hpp" />
     <ClInclude Include="OrderedSet.hpp" />
     <ClInclude Include="pch.hpp" />
-    <ClInclude Include="SetNode.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="OrderedSet.cpp" />
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="SetNode.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
