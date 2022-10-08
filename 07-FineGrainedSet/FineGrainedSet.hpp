@@ -5,17 +5,12 @@ struct LinkedNode
 {
 	LinkedNode(int value)
 		: myValue(value)
-		, myNext(), myPrev(), myLock()
+		, myNext(), myLock()
 	{}
 
 	inline void SetNext(LinkedNode* node)
 	{
 		myNext = node;
-	}
-
-	inline void SetPrev(LinkedNode* node)
-	{
-		myPrev = node;
 	}
 
 	inline void Lock()
@@ -31,10 +26,119 @@ struct LinkedNode
 	const int myValue;
 
 	LinkedNode* myNext;
-	LinkedNode* myPrev;
 
 private:
 	std::mutex myLock;
+};
+
+class FineOrderedSet
+{
+public:
+	FineOrderedSet()
+		: myHead(new LinkedNode(std::numeric_limits<int>::min()))
+		, myTail(new LinkedNode(std::numeric_limits<int>::max()))
+	{
+		myHead->SetNext(myTail);
+	}
+
+	bool Add(const int key)
+	{
+		bool result = false;
+
+		myHead->Lock();
+		LinkedNode* prev = myHead;
+		LinkedNode* curr = prev->myNext;
+
+		curr->Lock();
+		while (curr->myValue < key)
+		{
+			prev->Unlock();
+			prev = curr;
+			curr = curr->myNext;
+			curr->Lock();
+		}
+
+		if (curr->myValue != key)
+		{
+			auto new_node = new LinkedNode(key);
+			new_node->SetNext(curr);
+			prev->SetNext(new_node);
+
+			result = true;
+		}
+
+		curr->Unlock();
+		prev->Unlock();
+
+		return result;
+	}
+
+	bool Contains(const int key) const
+	{
+		bool result = false;
+
+		myHead->Lock();
+		LinkedNode* prev = myHead;
+		LinkedNode* curr = prev->myNext;
+
+		curr->Lock();
+		while (curr->myValue < key)
+		{
+			prev->Unlock();
+			prev = curr;
+			curr = curr->myNext;
+			curr->Lock();
+		}
+
+		if (curr->myValue == key)
+		{
+			result = true;
+		}
+
+		curr->Unlock();
+		prev->Unlock();
+
+		return result;
+	}
+
+	bool Remove(const int key)
+	{
+		bool result = false;
+
+		myHead->Lock();
+		LinkedNode* prev = myHead;
+		LinkedNode* curr = prev->myNext;
+
+		curr->Lock();
+		while (curr->myValue < key)
+		{
+			prev->Unlock();
+			prev = curr;
+			curr = curr->myNext;
+			curr->Lock();
+		}
+
+		if (curr->myValue == key)
+		{
+			prev->SetNext(curr->myNext);
+
+			//delete curr;
+			result = true;
+		}
+
+		curr->Unlock();
+		prev->Unlock();
+
+		return result;
+	}
+
+	inline void Clear()
+	{
+		myHead->SetNext(myTail);
+	}
+
+	LinkedNode* myHead;
+	LinkedNode* myTail;
 };
 
 class OptimisticOrderedSet
@@ -45,7 +149,6 @@ public:
 		, myTail(new LinkedNode(std::numeric_limits<int>::max()))
 	{
 		myHead->SetNext(myTail);
-		myTail->SetPrev(myHead);
 	}
 
 	bool Validate(const int value, const LinkedNode* prev, const LinkedNode* curr)
@@ -89,11 +192,9 @@ public:
 		{
 			auto new_node = new LinkedNode(value);
 
-			curr->SetPrev(new_node);
 			new_node->SetNext(curr);
 
 			prev->SetNext(new_node);
-			new_node->SetPrev(prev);
 		}
 
 		curr->Unlock();
@@ -162,125 +263,6 @@ public:
 	void Clear()
 	{
 		myHead->SetNext(myTail);
-		myTail->SetPrev(myHead);
-	}
-
-	LinkedNode* myHead, * myTail;
-};
-
-class FineOrderedSet
-{
-public:
-	FineOrderedSet()
-		: myHead(new LinkedNode(std::numeric_limits<int>::min()))
-		, myTail(new LinkedNode(std::numeric_limits<int>::max()))
-	{
-		myHead->SetNext(myTail);
-		myTail->SetPrev(myHead);
-	}
-
-	inline LinkedNode* Add(const int value)
-	{
-		LinkedNode* prev = myHead;
-		LinkedNode* curr;
-
-		prev->Lock();
-
-		curr = myHead->myNext;
-		curr->Lock();
-
-		while (curr->myValue < value)
-		{
-			prev->Unlock();
-			prev = curr;
-			curr = curr->myNext;
-			curr->Lock();
-		}
-
-		if (curr->myValue == value) // °ªÀ» Ã£¾Æ ³¿
-		{
-			curr->Unlock();
-			prev->Unlock();
-
-			return curr;
-		}
-
-		auto new_node = new LinkedNode(value);
-
-		curr->SetPrev(new_node);
-		new_node->SetNext(curr);
-
-		prev->SetNext(new_node);
-		new_node->SetPrev(prev);
-
-		curr->Unlock();
-		prev->Unlock();
-
-		return curr;
-	}
-
-	inline LinkedNode* Find(const int value)
-	{
-		LinkedNode* prev = myHead;
-		LinkedNode* curr;
-
-		prev->Lock();
-
-		curr = prev->myNext;
-		curr->Lock();
-
-		while (curr->myValue < value)
-		{
-			prev->Unlock();
-			prev = curr;
-			curr = curr->myNext;
-			curr->Lock();
-		}
-
-		curr->Unlock();
-		prev->Unlock();
-
-		if (curr->myValue == value) // °ªÀ» Ã£¾Æ ³¿
-		{
-			return curr;
-		}
-
-		return myTail;
-	}
-
-	inline void Remove(const int value)
-	{
-		LinkedNode* prev = myHead;
-		LinkedNode* curr;
-
-		prev->Lock();
-
-		curr = myHead->myNext;
-		curr->Lock();
-
-		while (curr->myValue < value)
-		{
-			prev->Unlock();
-			prev = curr;
-			curr = curr->myNext;
-			curr->Lock();
-		}
-
-		if (curr->myValue == value) // °ªÀ» Ã£¾Æ ³¿
-		{
-			prev->SetNext(curr->myNext);
-
-			curr->Unlock();
-			delete curr;
-		}
-
-		prev->Unlock();
-	}
-
-	inline void Clear()
-	{
-		myHead->SetNext(myTail);
-		myTail->SetPrev(myHead);
 	}
 
 	LinkedNode* myHead, * myTail;

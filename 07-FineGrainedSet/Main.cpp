@@ -6,12 +6,12 @@
 
 #include "FineGrainedSet.hpp"
 
-OptimisticOrderedSet my_set{};
+FineOrderedSet my_set{};
 
 constexpr int NUM_TEST = 4000000;
 constexpr int KEY_RANGE = 1000;
 
-void Worker(const int threads_number, const int index)
+void Worker(const int threads_number)
 {
 	int key = 0;
 	for (int i = 0; i < NUM_TEST / threads_number; i++)
@@ -41,12 +41,6 @@ void Worker(const int threads_number, const int index)
 				my_set.Contains(key);
 			}
 			break;
-
-			default:
-			{
-				throw "Error";
-			}
-			break;
 		}
 	}
 }
@@ -64,7 +58,7 @@ int main()
 
 		for (int i = 0; i < th_count; i++)
 		{
-			workers.emplace_back(Worker, th_count, i);
+			workers.emplace_back(Worker, th_count);
 		}
 
 		for (auto& th : workers)
@@ -84,8 +78,6 @@ int main()
 		auto it = my_set.myHead->myNext;
 		for (int i = 0; i < 20; i++)
 		{
-			if (it == my_set.myTail) break;
-
 			std::cout << it->myValue << ", ";
 
 			it = it->myNext;
