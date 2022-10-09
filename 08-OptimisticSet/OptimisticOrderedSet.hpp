@@ -41,12 +41,12 @@ public:
 		myHead->SetNext(myTail);
 	}
 
-	bool Validate(const int value, const LinkedNode* prev, const LinkedNode* curr)
+	bool Validate(const int key, const LinkedNode* prev, const LinkedNode* curr)
 	{
 		auto it_prev = myHead;
 		auto it = it_prev->myNext;
 
-		while (it->myValue < value)
+		while (it->myValue < key)
 		{
 			it_prev = it;
 			it = it->myNext;
@@ -55,13 +55,13 @@ public:
 		return (it_prev == prev && it == curr);
 	}
 
-	bool Add(const int value)
+	bool Add(const int key)
 	{
 		bool result = true;
 		auto prev = myHead;
 		auto curr = myHead->myNext;
 
-		while (curr->myValue < value)
+		while (curr->myValue < key)
 		{
 			prev = curr;
 			curr = curr->myNext;
@@ -70,17 +70,17 @@ public:
 		prev->Lock();
 		curr->Lock();
 
-		if (!Validate(value, prev, curr))
+		if (!Validate(key, prev, curr))
 		{
 			result = false;
 		}
-		else if (curr->myValue == value)
+		else if (curr->myValue == key)
 		{
 			result = false;
 		}
 		else
 		{
-			auto new_node = new LinkedNode(value);
+			auto new_node = new LinkedNode(key);
 
 			new_node->SetNext(curr);
 
@@ -93,13 +93,13 @@ public:
 		return result;
 	}
 
-	bool Contains(const int value)
+	bool Contains(const int key)
 	{
 		bool result = false;
 		auto prev = myHead;
 		auto curr = prev->myNext;
 
-		while (curr->myValue < value)
+		while (curr->myValue < key)
 		{
 			prev = curr;
 			curr = curr->myNext;
@@ -107,7 +107,7 @@ public:
 
 		prev->Lock();
 		curr->Lock();
-		if (curr->myValue == value)
+		if (curr->myValue == key)
 		{
 			result = true;
 		}
@@ -118,12 +118,12 @@ public:
 		return result;
 	}
 
-	void Remove(const int value)
+	void Remove(const int key)
 	{
 		auto prev = myHead;
 		auto curr = myHead->myNext;
 
-		while (curr->myValue < value)
+		while (curr->myValue < key)
 		{
 			prev = curr;
 			curr = curr->myNext;
@@ -132,9 +132,9 @@ public:
 		prev->Lock();
 		curr->Lock();
 
-		if (Validate(value, prev, curr))
+		if (Validate(key, prev, curr))
 		{
-			if (curr->myValue == value)
+			if (curr->myValue == key)
 			{
 				prev->SetNext(curr->myNext);
 
