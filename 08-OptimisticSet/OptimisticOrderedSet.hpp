@@ -58,39 +58,43 @@ public:
 	bool Add(const int key)
 	{
 		bool result = true;
-		auto prev = myHead;
-		auto curr = myHead->myNext;
 
-		while (curr->myValue < key)
+		while (true)
 		{
-			prev = curr;
-			curr = curr->myNext;
+			auto prev = myHead;
+			auto curr = myHead->myNext;
+
+			while (curr->myValue < key)
+			{
+				prev = curr;
+				curr = curr->myNext;
+			}
+
+			prev->Lock();
+			curr->Lock();
+
+			if (!Validate(key, prev, curr))
+			{
+				result = false;
+			}
+			else if (curr->myValue == key)
+			{
+				result = false;
+			}
+			else
+			{
+				auto new_node = new LinkedNode(key);
+
+				new_node->SetNext(curr);
+
+				prev->SetNext(new_node);
+			}
+
+			curr->Unlock();
+			prev->Unlock();
+
+			return result;
 		}
-
-		prev->Lock();
-		curr->Lock();
-
-		if (!Validate(key, prev, curr))
-		{
-			result = false;
-		}
-		else if (curr->myValue == key)
-		{
-			result = false;
-		}
-		else
-		{
-			auto new_node = new LinkedNode(key);
-
-			new_node->SetNext(curr);
-
-			prev->SetNext(new_node);
-		}
-
-		curr->Unlock();
-		prev->Unlock();
-
-		return result;
 	}
 
 	bool Contains(const int key)

@@ -26,5 +26,8 @@
     <ClCompile Include="Main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\OneDrive - 한국산업기술대학교\Study\2022\멀티코어 프로그래밍\Set Tester.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
