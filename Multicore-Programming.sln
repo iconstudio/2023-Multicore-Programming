@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "08-OptimisticSet", "08-Opti
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Subject 3", "Subject 3\Subject 3.vcxproj", "{CEE560A7-F569-4F48-8C0F-6FF24D670602}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "09-LAZY SET", "09-LAZY SET\09-LAZY SET.vcxproj", "{27C2682B-50DA-4820-A223-E29BA1E952F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -141,6 +143,14 @@ Global
 		{CEE560A7-F569-4F48-8C0F-6FF24D670602}.Release|x64.Build.0 = Release|x64
 		{CEE560A7-F569-4F48-8C0F-6FF24D670602}.Release|x86.ActiveCfg = Release|Win32
 		{CEE560A7-F569-4F48-8C0F-6FF24D670602}.Release|x86.Build.0 = Release|Win32
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Debug|x64.ActiveCfg = Debug|x64
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Debug|x64.Build.0 = Debug|x64
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Debug|x86.ActiveCfg = Debug|Win32
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Debug|x86.Build.0 = Debug|Win32
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Release|x64.ActiveCfg = Release|x64
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Release|x64.Build.0 = Release|x64
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Release|x86.ActiveCfg = Release|Win32
+		{27C2682B-50DA-4820-A223-E29BA1E952F3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
