@@ -10,26 +10,7 @@
 using namespace std;
 using namespace chrono;
 
-class LOCKFREE_PTR;
-class LOCKFREE_NODE
-{
-public:
-	LOCKFREE_NODE()
-		: LOCKFREE_NODE(-1)
-	{}
-
-	LOCKFREE_NODE(int key)
-		: LOCKFREE_NODE(false, nullptr)
-	{}
-
-	LOCKFREE_NODE(int key, LOCKFREE_NODE* ptr)
-		: v(key)
-		, next(false, ptr)
-	{}
-
-	int v;
-	LOCKFREE_PTR next;
-};
+class LOCKFREE_NODE;
 
 using LF_HANDLE = unsigned long long;
 class LOCKFREE_PTR
@@ -102,6 +83,26 @@ public:
 	LF_HANDLE next;
 };
 
+class LOCKFREE_NODE
+{
+public:
+	LOCKFREE_NODE()
+		: LOCKFREE_NODE(-1)
+	{}
+
+	LOCKFREE_NODE(int key)
+		: LOCKFREE_NODE(false, nullptr)
+	{}
+
+	LOCKFREE_NODE(int key, LOCKFREE_NODE* ptr)
+		: v(key)
+		, next(false, ptr)
+	{}
+
+	int v;
+	LOCKFREE_PTR next;
+};
+
 class LOCKFREE_SET
 {
 	LOCKFREE_NODE head;
@@ -111,7 +112,7 @@ public:
 	LOCKFREE_SET()
 		: head(), tail()
 	{
-		head = LOCKFREE_NODE{ 0x80000000, &tail };
+		head = LOCKFREE_NODE{ int(0x80000000), &tail };
 		//head.next = LOCKFREE_PTR{ false, &tail };
 
 		head.v = 0x80000000;

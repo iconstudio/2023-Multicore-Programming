@@ -3,6 +3,7 @@
 #include <thread>
 #include <vector>
 #include <array>
+#include <memory>
 #include <mutex>
 
 using namespace std;
@@ -779,15 +780,15 @@ public:
 		return (next & 1) == 1;
 	}
 
-	bool attempt_mark(LF_NODE* new_next, const bool mark_value)
+	bool attempt_mark(LF_NODE* succ, const bool mark_value)
 	{
 		bool old_mark = get_removed();
 		auto old_next = get_ptr();
 
-		bool new_mark = new_next->next.get_removed();
-		auto new_succ = new_next->next.get_ptr();
+		bool new_mark = get_removed();
+		auto new_next = get_ptr();
 
-		return CAS(old_next, new_succ, old_mark, new_mark);
+		return CAS(old_next, old_next, old_mark, mark_value);
 	}
 
 	LF_NODE* get_ptr_mark(bool* removed)
@@ -840,6 +841,7 @@ public:
 		head.v = 0x80000000;
 		tail.v = 0x7FFFFFFF;
 		head.next = LF_PTR{ false, &tail };
+		tail.next = LF_PTR{ false, nullptr };
 	}
 
 	void Find(LF_NODE*& prev, LF_NODE*& curr, int key)
@@ -920,7 +922,7 @@ public:
 
 			auto successor = curr->next.get_ptr();
 
-			snip = curr->next.attempt_mark(successor, true);
+			snip = prev->next.CAS(successor, successor, false, true);
 			if (!snip)
 			{
 				continue;
@@ -942,9 +944,11 @@ public:
 		{
 			it = it->next.get_ptr();
 			it->next.get_ptr_mark(&marked);
+
+			return (it->v == key && !it->next.get_removed());
 		}
 
-		return (it->v == key && !marked);
+		return false;
 	}
 
 	void print20()
@@ -985,8 +989,9 @@ public:
 //L_SET_SP my_set; // 게으른 동기화 shared_ptr 구현
 
 LF_SET my_set{};
-constexpr int TIMES_TARGET = 4000000;
-constexpr int NUMBER_LIMIT = 1000;
+
+constexpr int target_summary = 4000000;
+constexpr int num_range = 50;
 
 class HISTORY
 {
@@ -995,35 +1000,32 @@ public:
 	int i_value; // input
 	bool o_value; // output
 
-	HISTORY(int o, int i, bool re)
-		: op(o), i_value(i), o_value(re)
+	HISTORY(int o, int i, bool re) : op(o), i_value(i), o_value(re)
 	{}
 };
 
 void worker(vector<HISTORY>* history, int num_threads)
 {
-	for (int i = 0; i < TIMES_TARGET / num_threads; ++i)
+	for (int i = 0; i < target_summary / num_threads; ++i)
 	{
 		int op = rand() % 3;
 		switch (op)
 		{
 			case 0:
 			{
-				int v = rand() % NUMBER_LIMIT;
+				int v = rand() % num_range;
 				my_set.ADD(v);
 				break;
 			}
-
 			case 1:
 			{
-				int v = rand() % NUMBER_LIMIT;
+				int v = rand() % num_range;
 				my_set.REMOVE(v);
 				break;
 			}
-
 			case 2:
 			{
-				int v = rand() % NUMBER_LIMIT;
+				int v = rand() % num_range;
 				my_set.CONTAINS(v);
 				break;
 			}
@@ -1033,28 +1035,26 @@ void worker(vector<HISTORY>* history, int num_threads)
 
 void worker_check(vector<HISTORY>* history, int num_threads)
 {
-	for (int i = 0; i < TIMES_TARGET / num_threads; ++i)
+	for (int i = 0; i < target_summary / num_threads; ++i)
 	{
 		int op = rand() % 3;
 		switch (op)
 		{
 			case 0:
 			{
-				int v = rand() % NUMBER_LIMIT;
+				int v = rand() % num_range;
 				history->emplace_back(0, v, my_set.ADD(v));
 				break;
 			}
-
 			case 1:
 			{
-				int v = rand() % NUMBER_LIMIT;
+				int v = rand() % num_range;
 				history->emplace_back(1, v, my_set.REMOVE(v));
 				break;
 			}
-
 			case 2:
 			{
-				int v = rand() % NUMBER_LIMIT;
+				int v = rand() % num_range;
 				history->emplace_back(2, v, my_set.CONTAINS(v));
 				break;
 			}
@@ -1064,7 +1064,7 @@ void worker_check(vector<HISTORY>* history, int num_threads)
 
 void check_history(array<vector<HISTORY>, 16>& history, int num_threads)
 {
-	array<int, NUMBER_LIMIT> survive{};
+	array <int, num_range> survive = {};
 
 	cout << "Checking Consistency : ";
 	if (history[0].size() == 0)
@@ -1085,7 +1085,7 @@ void check_history(array<vector<HISTORY>, 16>& history, int num_threads)
 		}
 	}
 
-	for (int i = 0; i < 1000; ++i)
+	for (int i = 0; i < num_range; ++i)
 	{
 		int val = survive[i];
 
@@ -1121,7 +1121,7 @@ void check_history(array<vector<HISTORY>, 16>& history, int num_threads)
 
 int main()
 {
-	for (int num_threads = 1; num_threads <= 8; num_threads *= 2)
+	for (int num_threads = 1; num_threads <= 16; num_threads *= 2)
 	{
 		vector <thread> threads;
 		array<vector <HISTORY>, 16> history;

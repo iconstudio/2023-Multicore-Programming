@@ -1,7 +1,9 @@
 #include "Main.hpp"
 
 LOCKFREE_SET my_set{};
-constexpr int target_summary = 400000;
+
+constexpr int target_summary = 4000000;
+constexpr int num_range = 50;
 
 class HISTORY
 {
@@ -23,19 +25,19 @@ void worker(vector<HISTORY>* history, int num_threads)
 		{
 			case 0:
 			{
-				int v = rand() % 1000;
+				int v = rand() % num_range;
 				my_set.ADD(v);
 				break;
 			}
 			case 1:
 			{
-				int v = rand() % 1000;
+				int v = rand() % num_range;
 				my_set.REMOVE(v);
 				break;
 			}
 			case 2:
 			{
-				int v = rand() % 1000;
+				int v = rand() % num_range;
 				my_set.CONTAINS(v);
 				break;
 			}
@@ -52,19 +54,19 @@ void worker_check(vector<HISTORY>* history, int num_threads)
 		{
 			case 0:
 			{
-				int v = rand() % 1000;
+				int v = rand() % num_range;
 				history->emplace_back(0, v, my_set.ADD(v));
 				break;
 			}
 			case 1:
 			{
-				int v = rand() % 1000;
+				int v = rand() % num_range;
 				history->emplace_back(1, v, my_set.REMOVE(v));
 				break;
 			}
 			case 2:
 			{
-				int v = rand() % 1000;
+				int v = rand() % num_range;
 				history->emplace_back(2, v, my_set.CONTAINS(v));
 				break;
 			}
@@ -74,7 +76,8 @@ void worker_check(vector<HISTORY>* history, int num_threads)
 
 void check_history(array<vector<HISTORY>, 16>& history, int num_threads)
 {
-	array <int, 1000> survive = {};
+	array <int, num_range> survive = {};
+
 	cout << "Checking Consistency : ";
 	if (history[0].size() == 0)
 	{
@@ -94,7 +97,7 @@ void check_history(array<vector<HISTORY>, 16>& history, int num_threads)
 		}
 	}
 
-	for (int i = 0; i < 1000; ++i)
+	for (int i = 0; i < num_range; ++i)
 	{
 		int val = survive[i];
 
