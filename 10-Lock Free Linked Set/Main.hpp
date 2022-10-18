@@ -10,33 +10,28 @@
 using namespace std;
 using namespace chrono;
 
-class NODE
+class LOCKFREE_PTR;
+class LOCKFREE_NODE
 {
-	mutex n_lock;
 public:
+	LOCKFREE_NODE()
+		: LOCKFREE_NODE(-1)
+	{}
+
+	LOCKFREE_NODE(int key)
+		: LOCKFREE_NODE(false, nullptr)
+	{}
+
+	LOCKFREE_NODE(int key, LOCKFREE_NODE* ptr)
+		: v(key)
+		, next(false, ptr)
+	{}
+
 	int v;
-	NODE* volatile next;
-
-	NODE() : v(-1), next(nullptr)
-	{}
-
-	NODE(int x) : v(x), next(nullptr)
-	{}
-
-	inline void lock()
-	{
-		n_lock.lock();
-	}
-
-	inline void unlock()
-	{
-		n_lock.unlock();
-	}
+	LOCKFREE_PTR next;
 };
 
-class LOCKFREE_NODE;
 using LF_HANDLE = unsigned long long;
-
 class LOCKFREE_PTR
 {
 public:
@@ -105,32 +100,6 @@ public:
 	}
 
 	LF_HANDLE next;
-};
-
-class LOCKFREE_NODE
-{
-public:
-	LOCKFREE_NODE()
-		: LOCKFREE_NODE(-1)
-	{}
-
-	LOCKFREE_NODE(int key)
-		: v(key)
-		, next()
-	{}
-
-	LOCKFREE_NODE(int key, LOCKFREE_NODE* ptr)
-		: v(key)
-		, next(false, ptr)
-	{}
-
-	bool IsMarked() const
-	{
-
-	}
-
-	int v;
-	LOCKFREE_PTR next;
 };
 
 class LOCKFREE_SET
