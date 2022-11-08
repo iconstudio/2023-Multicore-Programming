@@ -11,9 +11,9 @@
 using namespace std;
 using namespace chrono;
 
-static const auto NUM_TEST = 4000;
-static const auto KEY_RANGE = 1000;
-static const auto MAX_THREAD = 64;
+constexpr auto NUM_TEST = 4000;
+constexpr auto KEY_RANGE = 1000;
+constexpr auto MAX_THREAD = 64;
 
 thread_local int thread_id;
 
@@ -30,8 +30,10 @@ public:
 	{
 		result = -1;
 	}
+
 	~Consensus()
 	{}
+
 	int decide(int value)
 	{
 		if (true == CAS(-1, value))
@@ -287,37 +289,43 @@ public:
 class WFUniversal
 {
 private:
-	NODE* announce[N];
-	NODE* head[N];
+	NODE* announce[MAX_THREAD];
+	NODE* head[MAX_THREAD];
 	NODE tail;
 
 public:
 	WFUniversal()
+		: announce(), head()
+		, tail()
 	{
 		tail.seq = 1;
-		for (int i = 0; i < N; ++i)
+		
+		for (int i = 0; i < MAX_THREAD; ++i)
 		{
-			head[i] = &tail; announce[i] = &tail;
+			head[i] = &tail;
+			announce[i] = &tail;
 		}
 	}
 
-	Response apply(Invocation invoc)
+	Response Apply(Invocation invoc)
 	{
-		int i = Thread_id();
+		const int i = thread_id;
 
 		announce[i] = new NODE(invoc);
-		head[i] = tail.max(head);
+		head[i] = GetMaxNode();
 
 		while (announce[i]->seq == 0)
 		{
 			NODE* before = head[i];
-			NODE* help = announce[((before->seq + 1) % N)];
+			NODE* help = announce[((before->seq + 1) % MAX_THREAD)];
 			NODE* prefer;
 
 			if (help->seq == 0) prefer = help;
 			else prefer = announce[i];
 
-			NODE* after = before->decideNext->decide(prefer);
+			//NODE* after = before->decideNext.decide(prefer);
+			NODE* after = reinterpret_cast<NODE*>(before->decideNext.decide(reinterpret_cast<int>(prefer)));
+			
 			before->next = after;
 			after->seq = before->seq + 1;
 
@@ -335,11 +343,61 @@ public:
 
 		return myObject.Apply(current->invoc);
 	}
+
+	NODE* GetMaxNode()
+	{
+		NODE* max_node = head[0];
+
+		for (int i = 1; i < MAX_THREAD; i++)
+		{
+			if (max_node->seq < head[i]->seq)
+			{
+				max_node = head[i];
+			}
+		}
+
+		return max_node;
+	}
+
+	void Print20()
+	{
+		NODE* before = GetMaxNode();
+
+		SeqObject my_object;
+
+		NODE* curr = tail.next;
+		while (true)
+		{
+			my_object.Apply(curr->invoc);
+			if (curr == before) break;
+			curr = curr->next;
+
+		}
+		my_object.Print20();
+	}
+
+	void clear()
+	{
+		/*
+		while (tail != nullptr)
+		{
+			NODE* temp = tail;
+			tail = tail->next;
+			delete temp;
+		}
+		tail = new NODE;
+		tail->seq = 1;
+		for (int i = 0; i < MAX_THREAD; ++i)
+			head[i] = tail;
+		
+		//*/
+	}
 };
 
 //SeqObject my_set; // 여기서 락이 없어서 그냥 프로그램이 죽는다
 //MutexUniversal my_set;
-LFUniversal my_set;
+//LFUniversal my_set;
+WFUniversal my_set;
 
 void Benchmark(int num_thread, int tid)
 {

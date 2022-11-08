@@ -30,6 +30,7 @@ int main()
 		cout << num_thread << " Threads   ";
 		cout << duration_cast<milliseconds>(du).count() << "ms \n";
 		my_set.Print20();
+		
 		cout << '\n';
 	}
 
