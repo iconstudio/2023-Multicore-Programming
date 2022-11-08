@@ -5,7 +5,7 @@ using namespace chrono;
 
 constexpr int target_summary = 10000000;
 
-CoarseGrainedQueue my_set{};
+LockfreeQueue my_set{};
 
 void Worker(int number_threads)
 {

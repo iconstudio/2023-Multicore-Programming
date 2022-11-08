@@ -24,7 +24,7 @@ public:
 
 	void Enqueue(const int& value)
 	{
-		std::lock_guard<std::mutex> lock{ mtx_enq };
+		std::lock_guard lock{ mtx_enq };
 
 		Node* node = new Node{ value, nullptr };
 		tail->next = node;
@@ -33,15 +33,15 @@ public:
 
 	int Dequeue()
 	{
-		std::lock_guard<std::mutex> lock{ mtx_deq };
-		
+		std::lock_guard lock{ mtx_deq };
+
 		if (head->next == nullptr)
 		{
 			return -1;
 		}
-		
+
 		Node* prev_head = head;
-		
+
 		int result = head->next->value;
 		head = head->next;
 
@@ -52,20 +52,21 @@ public:
 
 	void Clear()
 	{
-		Node* node = head->next;
+		Node* node = head;
+
 		while (node != nullptr)
 		{
 			Node* next = node->next;
 			delete node;
 			node = next;
 		}
-		
+
 		head = tail = new Node{ -1 };
 	}
 
 	void Print()
 	{
-		Node* it = head->next;
+		Node* it = head;
 
 		for (int i = 0; i < 20; i++)
 		{
