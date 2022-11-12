@@ -11,18 +11,18 @@
 using namespace std;
 using namespace chrono;
 
-constexpr auto NUM_TEST = 4000;
-constexpr auto KEY_RANGE = 1000;
 constexpr auto MAX_THREAD = 64;
-
 thread_local int thread_id;
+
+typedef bool Response;
 
 class Consensus
 {
-	int result;
-	bool CAS(int old_value, int new_value)
+	ptrdiff_t result;
+	
+	bool CAS(ptrdiff_t old_value, const ptrdiff_t& new_value)
 	{
-		return atomic_compare_exchange_strong(reinterpret_cast<atomic_int*>(&result), &old_value, new_value);
+		return atomic_compare_exchange_strong(reinterpret_cast<atomic_ptrdiff_t*>(&result), &old_value, new_value);
 	}
 
 public:
@@ -34,15 +34,14 @@ public:
 	~Consensus()
 	{}
 
-	int decide(int value)
+	ptrdiff_t decide(const ptrdiff_t& value)
 	{
 		if (true == CAS(-1, value))
 			return value;
-		else return result;
+		else
+			return result;
 	}
 };
-
-typedef bool Response;
 
 enum Method
 {
@@ -53,6 +52,31 @@ struct Invocation
 {
 	Method method;
 	int	input;
+};
+
+class NODE
+{
+public:
+	Invocation invoc;
+	Consensus decideNext;
+	NODE* next;
+	volatile int seq;
+
+	NODE()
+	{
+		seq = 0;
+		next = nullptr;
+	}
+
+	~NODE()
+	{}
+
+	NODE(const Invocation& input_invoc)
+	{
+		invoc = input_invoc;
+		next = nullptr;
+		seq = 0;
+	}
 };
 
 class SeqObject
@@ -128,31 +152,6 @@ public:
 	void clear()
 	{
 		seq_set.clear();
-	}
-};
-
-class NODE
-{
-public:
-	Invocation invoc;
-	Consensus decideNext;
-	NODE* next;
-	volatile int seq;
-
-	NODE()
-	{
-		seq = 0;
-		next = nullptr;
-	}
-
-	~NODE()
-	{}
-
-	NODE(const Invocation& input_invoc)
-	{
-		invoc = input_invoc;
-		next = nullptr;
-		seq = 0;
 	}
 };
 
@@ -299,7 +298,7 @@ public:
 		, tail()
 	{
 		tail.seq = 1;
-		
+
 		for (int i = 0; i < MAX_THREAD; ++i)
 		{
 			head[i] = &tail;
@@ -320,19 +319,22 @@ public:
 			NODE* help = announce[((before->seq + 1) % MAX_THREAD)];
 			NODE* prefer;
 
-			if (help->seq == 0) prefer = help;
-			else prefer = announce[i];
+			if (help->seq == 0)
+				prefer = help;
+			else
+				prefer = announce[i];
 
 			//NODE* after = before->decideNext.decide(prefer);
-			NODE* after = reinterpret_cast<NODE*>(before->decideNext.decide(reinterpret_cast<int>(prefer)));
-			
+			NODE* after = reinterpret_cast<NODE*>(before->decideNext.decide(reinterpret_cast<ptrdiff_t>(prefer)));
+
 			before->next = after;
 			after->seq = before->seq + 1;
 
 			head[i] = after;
 		}
 
-		SeqObject myObject;
+		SeqObject myObject{};
+
 		NODE* current = tail.next;
 		while (current != announce[i])
 		{
@@ -389,32 +391,7 @@ public:
 		tail->seq = 1;
 		for (int i = 0; i < MAX_THREAD; ++i)
 			head[i] = tail;
-		
+
 		//*/
 	}
 };
-
-//SeqObject my_set; // 여기서 락이 없어서 그냥 프로그램이 죽는다
-//MutexUniversal my_set;
-//LFUniversal my_set;
-WFUniversal my_set;
-
-void Benchmark(int num_thread, int tid)
-{
-	thread_id = tid;
-
-	Invocation invoc{};
-
-	for (int i = 0; i < NUM_TEST / num_thread; ++i)
-	{
-		switch (rand() % 3)
-		{
-			case 0: invoc.method = M_ADD; break;
-			case 1: invoc.method = M_REMOVE; break;
-			case 2: invoc.method = M_CONTAINS; break;
-		}
-
-		invoc.input = rand() % KEY_RANGE;
-		my_set.Apply(invoc);
-	}
-}
