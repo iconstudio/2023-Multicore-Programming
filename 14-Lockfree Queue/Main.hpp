@@ -17,31 +17,32 @@ class LockfreeQueue
 {
 public:
 	LockfreeQueue()
-		: head(), tail()
 	{
 		head = tail = new Node{ -1 };
 	}
 
-	bool CAS(Node* volatile* ptr, Node* old_value, Node* new_value)
+	bool CAS(Node* volatile* ptr, Node* old_value, const Node const* new_value)
 	{
+		auto old = reinterpret_cast<unsigned long long>(old_value);
+
 		return std::atomic_compare_exchange_strong
 		(
-			reinterpret_cast<volatile std::atomic_llong*>(ptr),
-			reinterpret_cast<long long*>(old_value),
-			reinterpret_cast<long long>(new_value)
+			reinterpret_cast<volatile std::atomic_ullong*>(ptr),
+			&old,
+			reinterpret_cast<unsigned long long>(new_value)
 		);
 	}
 
-	void Enqueue(int value)
+	void Enqueue(const int& value)
 	{
 		Node* node = new Node{ value, nullptr };
-		
+
 		while (true)
 		{
 			Node* last = tail;
 			Node* next = last->next;
 			if (last != tail) continue;
-			
+
 			if (nullptr == next)
 			{
 				if (CAS(&(last->next), nullptr, node))
@@ -62,21 +63,35 @@ public:
 		while (true)
 		{
 			Node* first = head;
-			if (first->next == nullptr)
-			{
-				//EMPTY_ERROR();
-			}
-			
-			if (!CAS(&head, first, first->next))
+			Node* last = tail;
+			Node* next = first->next;
+
+			if (first != head)
 			{
 				continue;
 			}
-			
-			const int result = first->next->value;
+
+			if (next == nullptr)
+			{
+				//EMPTY_ERROR();
+				return -1;
+			}
+
+			if (first == last)
+			{
+				CAS(&tail, last, next);
+				continue;
+			}
+
+			const int result = next->value;
+			if (!CAS(&head, first, next))
+			{
+				continue;
+			}
+
 			delete first;
-			
 			return result;
-		}\
+		}
 	}
 
 	void Clear()
@@ -95,7 +110,7 @@ public:
 
 	void Print()
 	{
-		Node* it = head;
+		Node* it = head->next;
 
 		for (int i = 0; i < 20; i++)
 		{

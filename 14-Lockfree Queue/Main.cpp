@@ -3,7 +3,7 @@
 using namespace std;
 using namespace chrono;
 
-constexpr int target_summary = 10000000;
+constexpr int target_summary = 4000000;
 
 LockfreeQueue my_set{};
 
@@ -17,7 +17,7 @@ void Worker(int number_threads)
 		}
 		else
 		{
-			my_set.Dequeue();
+			int result = my_set.Dequeue();
 		}
 	}
 }
@@ -42,7 +42,7 @@ int main()
 		auto exec_ms = duration_cast<milliseconds>(exec_t).count();
 
 		my_set.Print();
-		cout << '\n' << num_threads << " Threads.  Exec Time : " << exec_ms << endl;
+		cout << '\n' << num_threads << " Threads. Exec Time: " << exec_ms << endl;
 
 		cout << endl;
 	}

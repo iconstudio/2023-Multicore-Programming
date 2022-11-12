@@ -3,7 +3,7 @@
 using namespace std;
 using namespace chrono;
 
-constexpr int target_summary = 10000000;
+constexpr int target_summary = 40000000;
 
 CoarseGrainedQueue my_set{};
 
