@@ -3,7 +3,7 @@
 using namespace std;
 using namespace chrono;
 
-constexpr int target_summary = 4000000;
+constexpr int target_summary = 1000000;
 
 LockfreeQueue my_set{};
 
@@ -11,13 +11,13 @@ void Worker(int number_threads)
 {
 	for (int i = 0; i < target_summary / number_threads; ++i)
 	{
-		if (rand() % 2 || i < 32)
+		if (rand() % 2 || i < 1000 / number_threads)
 		{
 			my_set.Enqueue(i);
 		}
 		else
 		{
-			int result = my_set.Dequeue();
+			my_set.Dequeue();
 		}
 	}
 }
@@ -26,9 +26,8 @@ int main()
 {
 	for (int num_threads = 1; num_threads <= 16; num_threads *= 2)
 	{
-		vector <thread> threads;
-		my_set.Clear();
-
+		vector<thread> threads;
+		
 		auto start_t = high_resolution_clock::now();
 
 		for (int i = 0; i < num_threads; ++i)
@@ -43,7 +42,8 @@ int main()
 
 		my_set.Print();
 		cout << '\n' << num_threads << " Threads. Exec Time: " << exec_ms << endl;
-
 		cout << endl;
+
+		my_set.Clear();
 	}
 }

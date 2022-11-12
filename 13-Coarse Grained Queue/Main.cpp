@@ -3,7 +3,7 @@
 using namespace std;
 using namespace chrono;
 
-constexpr int target_summary = 40000000;
+constexpr int target_summary = 10000000;
 
 CoarseGrainedQueue my_set{};
 
@@ -11,7 +11,7 @@ void Worker(int number_threads)
 {
 	for (int i = 0; i < target_summary / number_threads; ++i)
 	{
-		if (rand() % 2 || i < 32)
+		if (rand() % 2 || i < 10000 / number_threads)
 		{
 			my_set.Enqueue(i);
 		}

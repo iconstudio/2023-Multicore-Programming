@@ -21,7 +21,7 @@ public:
 		head = tail = new Node{ -1 };
 	}
 
-	bool CAS(Node* volatile* ptr, Node* old_value, const Node const* new_value)
+	bool CAS(Node* volatile* ptr, Node* old_value, Node* new_value)
 	{
 		auto old = reinterpret_cast<unsigned long long>(old_value);
 
@@ -35,7 +35,7 @@ public:
 
 	void Enqueue(const int& value)
 	{
-		Node* node = new Node{ value, nullptr };
+		Node* node = new Node{ value };
 
 		while (true)
 		{
@@ -84,10 +84,11 @@ public:
 			}
 
 			const int result = next->value;
-			if (!CAS(&head, first, next))
+			if (false == CAS(&head, first, next))
 			{
 				continue;
 			}
+			first->next = nullptr;
 
 			delete first;
 			return result;
@@ -96,16 +97,17 @@ public:
 
 	void Clear()
 	{
-		Node* node = head;
+		Node* it = head->next;
 
-		while (node != nullptr)
+		while (it != nullptr)
 		{
-			Node* next = node->next;
-			delete node;
-			node = next;
+			Node* next = it->next;
+			delete it;
+			it = next;
 		}
 
-		head = tail = new Node{ -1 };
+		head->next = nullptr;
+		tail = head;
 	}
 
 	void Print()
