@@ -49,6 +49,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Subject 8", "Subject 8\Subj
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Subject 10", "Subject 10\Subject 10.vcxproj", "{CC5B7DB9-1879-4A31-85B8-91CE2FDDF494}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "15-Lock Free Time Stamps Queue", "15-Lock Free Time Stamps Queue\15-Lock Free Time Stamps Queue.vcxproj", "{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -241,6 +243,14 @@ Global
 		{CC5B7DB9-1879-4A31-85B8-91CE2FDDF494}.Release|x64.Build.0 = Release|x64
 		{CC5B7DB9-1879-4A31-85B8-91CE2FDDF494}.Release|x86.ActiveCfg = Release|Win32
 		{CC5B7DB9-1879-4A31-85B8-91CE2FDDF494}.Release|x86.Build.0 = Release|Win32
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Debug|x64.ActiveCfg = Debug|x64
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Debug|x64.Build.0 = Debug|x64
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Debug|x86.ActiveCfg = Debug|Win32
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Debug|x86.Build.0 = Debug|Win32
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Release|x64.ActiveCfg = Release|x64
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Release|x64.Build.0 = Release|x64
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Release|x86.ActiveCfg = Release|Win32
+		{7B60979A-E87B-4C9D-8482-8D3AA7CDED02}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
