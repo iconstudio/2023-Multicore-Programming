@@ -634,11 +634,11 @@ public:
 	}
 };
 
-//#define UNIVERSAL_TESTER LFSET
+#define UNIVERSAL_TESTER LFSET
 //#define UNIVERSAL_TESTER SeqObject
 //#define UNIVERSAL_TESTER LFUniversal
 //#define UNIVERSAL_TESTER MutexUniversal
-#define UNIVERSAL_TESTER WFUniversal
+//#define UNIVERSAL_TESTER WFUniversal
 
 UNIVERSAL_TESTER my_set{};
 void Worker(const int& number_threads, const int& id);

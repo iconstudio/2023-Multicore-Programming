@@ -3,6 +3,8 @@
 #include <iomanip>
 #include <chrono>
 #include <mutex>
+#include <atomic>
+#include <memory>
 #include <thread>
 #include <vector>
 #include <algorithm>
@@ -196,7 +198,7 @@ public:
 using namespace std;
 using namespace chrono;
 
-constexpr int target_summary = 4000000;
+constexpr int target_summary = 1000000;
 
 //CoarseGrainedQueue my_set{};
 LockfreeQueue my_set{};
