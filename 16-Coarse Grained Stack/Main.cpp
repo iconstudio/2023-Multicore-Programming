@@ -3,21 +3,21 @@
 using namespace std;
 using namespace chrono;
 
-constexpr int target_summary = 1000000;
+constexpr int target_summary = 10000000;
 
-StampedQueue my_set{};
+Stack my_set{};
 
-void Worker(int number_threads)
+void Worker(const unsigned& number_threads)
 {
-	for (int i = 0; i < target_summary / number_threads; ++i)
+	for (unsigned i = 0; i < target_summary / number_threads; ++i)
 	{
 		if (rand() % 2 || i < 1000 / number_threads)
 		{
-			my_set.Enqueue(i);
+			my_set.Push(i);
 		}
 		else
 		{
-			my_set.Dequeue();
+			int result = my_set.Pop();
 		}
 	}
 }
