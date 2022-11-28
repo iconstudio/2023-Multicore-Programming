@@ -24,13 +24,13 @@ public:
 
 	bool CAS(Node* volatile* ptr, Node* old_value, Node* new_value)
 	{
-		auto old = reinterpret_cast<unsigned long long>(old_value);
+		auto old = reinterpret_cast<size_t>(old_value);
 
 		return std::atomic_compare_exchange_strong
 		(
-			reinterpret_cast<volatile std::atomic_ullong*>(ptr),
+			reinterpret_cast<volatile std::atomic<size_t>*>(ptr),
 			&old,
-			reinterpret_cast<unsigned long long>(new_value)
+			reinterpret_cast<size_t>(new_value)
 		);
 	}
 
