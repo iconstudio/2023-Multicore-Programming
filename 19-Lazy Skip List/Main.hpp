@@ -19,6 +19,7 @@ public:
 	NODE_SK(const int& v, const int& top)
 		: value(v), top_level(top)
 		, nexts()
+		, isRemoved(false), fullyLinked(false)
 	{
 		for (auto i = 0; i <= MAX_LEVEL; ++i)
 		{
@@ -28,15 +29,30 @@ public:
 
 	NODE_SK() : NODE_SK(-1, 0) {}
 
+	void lock()
+	{
+		myMutex.lock();
+	}
+
+	void unlock()
+	{
+		myMutex.unlock();
+	}
+
 	int value;
 	int top_level;
+
+	std::recursive_mutex myMutex;
 	NODE_SK* volatile nexts[MAX_LEVEL + 1];
+
+	volatile bool isRemoved;
+	volatile bool fullyLinked;
 };
 
-class ProceduralSkipList
+class SkipList
 {
 public:
-	ProceduralSkipList()
+	SkipList()
 		: head()
 	{
 		head.value = 0x80000000;
@@ -49,16 +65,14 @@ public:
 		}
 	}
 
-	void Find(int x, NODE_SK* pred[], NODE_SK* curr[])
+	int Find(int x, NODE_SK* pred[], NODE_SK* curr[])
 	{
-		// 먼저 맨 위와 맨 아래의 노드를 검사
+		int found_level = -1;
+
 		pred[MAX_LEVEL] = &head;
 
-		// 나머지 head 밑의 노드들을 검사
 		for (int i = MAX_LEVEL; i >= 0; --i)
 		{
-			// 다음
-			// currs[MAX_LEVEL] = preds[MAX_LEVEL]->nexts[MAX_LEVEL]
 			curr[i] = pred[i]->nexts[i];
 
 			// 노드 전진
@@ -68,10 +82,16 @@ public:
 				curr[i] = curr[i]->nexts[i];
 			}
 
-			// 지금 찾은 것을 기준으로 루프 시작
+			if (-1 == found_level && curr[i]->value == x)
+			{
+				found_level = i;
+			}
+
 			if (i == 0) break;
 			pred[i - 1] = pred[i];
 		}
+
+		return found_level;
 	}
 
 	bool ADD(int x)
@@ -80,30 +100,75 @@ public:
 		NODE_SK* pred[MAX_LEVEL + 1];
 		NODE_SK* curr[MAX_LEVEL + 1];
 
-		std::unique_lock<std::mutex> guard{ myLocker };
+		//std::unique_lock<std::recursive_mutex> guard{ myLocker };
 
-		Find(x, pred, curr);
-		if (curr[0]->value == x)
+		while (true)
 		{
-			return false;
-		}
-		else
-		{
-			// new_level이 높아질 때마다 현존하는 노드의 절반이 new_level보다 큼을 의미한다.
-			int new_level = 0;
+			int found_level = Find(x, pred, curr);
+			if (-1 != found_level)
+			{
+				// 삭제된 노드는 Add가 가능하므로 다시 시작
+				if (curr[found_level]->isRemoved) continue;
 
+				// 완전 연결될 때 까지 대기
+				while (!curr[found_level]->fullyLinked);
+				return false;
+			}
+
+			int valid_level = 0;
 			for (int i = 0; i < MAX_LEVEL; ++i)
 			{
 				if ((rand() % 2) == 0) break;
-				new_level++;
+				valid_level++;
 			}
 
-			NODE_SK* node = new NODE_SK{ x, new_level };
-			for (int i = 0; i <= new_level; ++i)
-				node->nexts[i] = curr[i];
+			// 
+			bool valid = false;
 
-			for (int i = 0; i <= new_level; ++i)
-				pred[i]->nexts[i] = node;
+			// 필요없는 잠금을 막기 위해 노드 하나씩 잠그면서 진행
+			int last_top_locked_level = 0;
+
+			// 모든 노드를 잠그고 무결성 검사
+			for (int i = 0; i <= valid_level; i++)
+			{
+				pred[i]->lock();
+				last_top_locked_level = i;
+
+				valid = !pred[i]->isRemoved
+					&& !curr[i]->isRemoved
+					&& pred[i]->nexts[i] == curr[i];
+
+				if (!valid)
+				{
+					break;
+				}
+			}
+			if (!valid)
+			{
+				// recursive_lock은 잠근 횟수만큼 다시 해제해줘야 한다.
+				for (int k = 0; k < last_top_locked_level; k++)
+				{
+					pred[k]->unlock();
+				}
+
+				continue;
+			}
+
+			// 노드 삽입 부분
+			auto newbie = new NODE_SK{ x, valid_level };
+			for (int i = 0; i <= valid_level; i++)
+			{
+				newbie->nexts[i] = curr[i];
+			}
+			for (int i = 0; i <= valid_level; i++)
+			{
+				pred[i]->nexts[i] = newbie;
+			}
+
+			for (int k = 0; k < last_top_locked_level; k++)
+			{
+				pred[k]->unlock();
+			}
 
 			return true;
 		}
@@ -115,7 +180,7 @@ public:
 		NODE_SK* pred[MAX_LEVEL + 1]{};
 		NODE_SK* curr[MAX_LEVEL + 1]{};
 
-		std::unique_lock<std::mutex> guard{ myLocker };
+		//std::unique_lock<std::recursive_mutex> guard{ myLocker };
 		Find(x, pred, curr);
 
 		if (curr[0]->value != x)
@@ -184,5 +249,5 @@ public:
 	}
 
 	NODE_SK head, tail;
-	std::mutex myLocker;
+	std::recursive_mutex myLocker;
 };
