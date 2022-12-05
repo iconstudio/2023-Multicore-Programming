@@ -13,6 +13,31 @@
 constexpr int MAX_LEVEL = 100;
 constexpr int TARGET_SUM = 40000000;
 
+class LF_NODE_SK
+{
+public:
+	LF_NODE_SK(const int& v, const int& top)
+		: value(v), top_level(top)
+		, nexts()
+		, isRemoved(false), fullyLinked(false)
+	{
+		for (auto i = 0; i <= MAX_LEVEL; ++i)
+		{
+			nexts[i] = nullptr;
+		}
+	}
+
+	LF_NODE_SK() : LF_NODE_SK(-1, 0) {}
+
+	int value;
+	int top_level;
+
+	LF_NODE_SK* volatile nexts[MAX_LEVEL + 1];
+
+	volatile bool isRemoved;
+	volatile bool fullyLinked;
+};
+
 class NODE_SK
 {
 public:
