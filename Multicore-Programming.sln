@@ -61,6 +61,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "19-Lazy Skip List", "19-Laz
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "20-Lock Free Skip List", "20-Lock Free Skip List\20-Lock Free Skip List.vcxproj", "{79E54BB0-95BD-4783-993E-3866917B2378}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "21-OpenMP", "21-OpenMP\21-OpenMP.vcxproj", "{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -301,6 +303,14 @@ Global
 		{79E54BB0-95BD-4783-993E-3866917B2378}.Release|x64.Build.0 = Release|x64
 		{79E54BB0-95BD-4783-993E-3866917B2378}.Release|x86.ActiveCfg = Release|Win32
 		{79E54BB0-95BD-4783-993E-3866917B2378}.Release|x86.Build.0 = Release|Win32
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Debug|x64.ActiveCfg = Debug|x64
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Debug|x64.Build.0 = Debug|x64
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Debug|x86.ActiveCfg = Debug|Win32
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Debug|x86.Build.0 = Debug|Win32
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Release|x64.ActiveCfg = Release|x64
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Release|x64.Build.0 = Release|x64
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Release|x86.ActiveCfg = Release|Win32
+		{741019C8-AE7A-4B1D-B8CA-ADBD1D80EFA5}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

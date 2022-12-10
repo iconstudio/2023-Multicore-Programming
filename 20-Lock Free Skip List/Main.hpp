@@ -251,39 +251,49 @@ public:
 			}
 
 			// 삭제는 위층부터 진행한다.
-			int top_level = curr[0]->top_level;
-
-			bool is_failed = false;
+			auto removed_node = curr[0];
+			int top_level = removed_node->top_level;
 
 			// 바닥 층은 아직 건드리면 안된다.
 			for (int i = top_level; 0 < i; i--)
 			{
-				if (!prev[i]->nexts[i].CAS(curr[i], curr[i], false, true))
-				{
-					// 다른 스레드에서 FIND, REMOVE 중이다.
-					is_failed = true;
+				bool removed = false;
 
-					break;
+				auto successor = removed_node->nexts[i].GetRemovedPointer(removed);
+
+				// 무조건 마킹 시도
+				while (!removed)
+				{
+					removed_node->nexts[i].CAS(successor, successor, false, true);
+
+					successor = removed_node->nexts[i].GetRemovedPointer(removed);
 				}
 			}
 
-			if (is_failed)
-			{
-				// 다시 시작
-				continue;
-			}
-
 			// 위층을 삭제한 부분을 복구하지 않아도 된다.
-			// 0 윗층은 단순히 지름길이다.
-			if (!prev[0]->nexts[0].CAS(curr[0], curr[0], false, true))
-			{
-				// 다른 스레드에서 이미 삭제했다.
-				continue;
-			}
+			bool removed = false;
+			auto successor = removed_node->nexts[0].GetRemovedPointer(removed);
 
-			// 마킹된 노드를 정리한다.
-			FIND(prev, curr, key);
-			return true;
+			// 0 윗층은 단순히 지름길이다.
+			while (true)
+			{
+				bool me_marked = removed_node->nexts[0].CAS(successor, successor, false, true);
+
+				successor = curr[0]->nexts[0].GetRemovedPointer(removed);
+
+				if (me_marked)
+				{
+					// 마킹된 노드를 정리한다.
+					FIND(prev, curr, key);
+
+					return true;
+				}
+				else if (removed)
+				{
+					// 다른 스레드에서 이미 삭제했다.
+					return false;
+				}
+			}
 		}
 	}
 
